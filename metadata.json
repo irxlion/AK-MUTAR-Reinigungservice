@@ -1,0 +1,9 @@
+
+{
+  "name": "MrIBO Reinigungsservice Ludwigshafen",
+  "description": "Premium Unternehmenswebsite für MrIBO - Ihr Experte für professionelle Reinigung in Ludwigshafen am Rhein.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
