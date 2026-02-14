@@ -1,7 +1,9 @@
 
 import React, { useState } from 'react';
-import { Send, Mail, Phone, MapPin, CheckCircle2 } from 'lucide-react';
+import { Send, Mail, Phone, MapPin, CheckCircle2, Loader2 } from 'lucide-react';
 import { FadeIn, StaggerContainer } from './FadeIn';
+
+const WEB3FORMS_ACCESS_KEY = "147d4b53-adb7-4bf0-a198-ca5439812a46";
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -11,10 +13,45 @@ const Contact: React.FC = () => {
     service: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Ihre Anfrage wurde erfolgreich übermittelt. Wir melden uns in Kürze!");
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+
+    try {
+      const submissionData = new FormData();
+      submissionData.append("access_key", WEB3FORMS_ACCESS_KEY);
+      submissionData.append("subject", `Neue Anfrage von ${formData.name} – AK MUTAR Reinigungsservice`);
+      submissionData.append("from_name", "AK MUTAR Webseite");
+      submissionData.append("name", formData.name);
+      submissionData.append("email", formData.email);
+      if (formData.phone) submissionData.append("phone", formData.phone);
+      if (formData.service) submissionData.append("service", formData.service);
+      submissionData.append("message", formData.message);
+
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: submissionData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSubmitStatus('success');
+        setFormData({ name: '', email: '', phone: '', service: '', message: '' });
+        // Reset success message after 5 seconds
+        setTimeout(() => setSubmitStatus('idle'), 5000);
+      } else {
+        setSubmitStatus('error');
+      }
+    } catch (error) {
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -89,77 +126,118 @@ const Contact: React.FC = () => {
             <div className="lg:w-3/5">
               <FadeIn direction="left" delay={0.4}>
                 <div className="bg-white p-6 sm:p-8 md:p-16 rounded-[2rem] md:rounded-[3rem] shadow-3xl">
-                  <form onSubmit={handleSubmit}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                      <div className="space-y-2">
-                        <label className="text-slate-900 font-extrabold text-sm uppercase tracking-widest ml-1">Name / Firma</label>
-                        <input
-                          type="text"
-                          required
-                          className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold"
-                          placeholder="Ihr Name"
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        />
+                  {submitStatus === 'success' ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="bg-green-100 p-4 rounded-full mb-6">
+                        <CheckCircle2 className="text-green-600 w-12 h-12" />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-slate-900 font-extrabold text-sm uppercase tracking-widest ml-1">E-Mail Adresse</label>
-                        <input
-                          type="email"
-                          required
-                          className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold"
-                          placeholder="mail@beispiel.de"
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-slate-900 font-extrabold text-sm uppercase tracking-widest ml-1">Telefonnummer</label>
-                        <input
-                          type="tel"
-                          className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold"
-                          placeholder="0123 / 456 78 90"
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-slate-900 font-extrabold text-sm uppercase tracking-widest ml-1">Ihre Anforderung</label>
-                        <select
-                          className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold appearance-none cursor-pointer"
-                          onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-                        >
-                          <option value="">Wählen Sie einen Service</option>
-                          <option value="buero">Büroreinigung</option>
-                          <option value="gebaeude">Gebäudereinigung</option>
-                          <option value="fenster">Fenster- & Glasreinigung</option>
-                          <option value="klinik">Klinikreinigung</option>
-                        </select>
-                      </div>
+                      <h3 className="text-2xl md:text-3xl font-black text-slate-900 mb-4">Vielen Dank!</h3>
+                      <p className="text-slate-500 text-lg font-medium max-w-md">
+                        Ihre Anfrage wurde erfolgreich übermittelt. Wir melden uns innerhalb von 24 Stunden bei Ihnen!
+                      </p>
                     </div>
-                    <div className="space-y-2 mb-10">
-                      <label className="text-slate-900 font-extrabold text-sm uppercase tracking-widest ml-1">Nachricht</label>
-                      <textarea
-                        rows={4}
-                        required
-                        className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold resize-none"
-                        placeholder="Erzählen Sie uns kurz von Ihrem Projekt..."
-                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      ></textarea>
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full bg-blue-600 hover:bg-slate-900 text-white font-black py-6 rounded-2xl shadow-2xl shadow-blue-600/30 transition-all flex items-center justify-center gap-4 text-xl transform hover:-translate-y-1"
-                    >
-                      Anfrage absenden
-                      <Send size={24} />
-                    </button>
-                  </form>
+                  ) : (
+                    <form onSubmit={handleSubmit}>
+                      <input type="hidden" name="access_key" value={WEB3FORMS_ACCESS_KEY} />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <div className="space-y-2">
+                          <label className="text-slate-900 font-extrabold text-sm uppercase tracking-widest ml-1">Name / Firma</label>
+                          <input
+                            type="text"
+                            name="name"
+                            required
+                            value={formData.name}
+                            className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold"
+                            placeholder="Ihr Name"
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-slate-900 font-extrabold text-sm uppercase tracking-widest ml-1">E-Mail Adresse</label>
+                          <input
+                            type="email"
+                            name="email"
+                            required
+                            value={formData.email}
+                            className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold"
+                            placeholder="mail@beispiel.de"
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-slate-900 font-extrabold text-sm uppercase tracking-widest ml-1">Telefonnummer</label>
+                          <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold"
+                            placeholder="0123 / 456 78 90"
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-slate-900 font-extrabold text-sm uppercase tracking-widest ml-1">Ihre Anforderung</label>
+                          <select
+                            name="service"
+                            value={formData.service}
+                            className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold appearance-none cursor-pointer"
+                            onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                          >
+                            <option value="">Wählen Sie einen Service</option>
+                            <option value="buero">Büroreinigung</option>
+                            <option value="gebaeude">Gebäudereinigung</option>
+                            <option value="fenster">Fenster- & Glasreinigung</option>
+                            <option value="klinik">Klinikreinigung</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="space-y-2 mb-10">
+                        <label className="text-slate-900 font-extrabold text-sm uppercase tracking-widest ml-1">Nachricht</label>
+                        <textarea
+                          rows={4}
+                          name="message"
+                          required
+                          value={formData.message}
+                          className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold resize-none"
+                          placeholder="Erzählen Sie uns kurz von Ihrem Projekt..."
+                          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        ></textarea>
+                      </div>
+
+                      {submitStatus === 'error' && (
+                        <div className="mb-6 bg-red-50 border-2 border-red-200 text-red-700 p-4 rounded-2xl text-center font-bold">
+                          Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie uns telefonisch.
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full bg-blue-600 hover:bg-slate-900 text-white font-black py-6 rounded-2xl shadow-2xl shadow-blue-600/30 transition-all flex items-center justify-center gap-4 text-xl transform hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            Wird gesendet...
+                            <Loader2 size={24} className="animate-spin" />
+                          </>
+                        ) : (
+                          <>
+                            Anfrage absenden
+                            <Send size={24} />
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  )}
                 </div>
               </FadeIn>
             </div>
           </div>
-        </StaggerContainer >
-      </div >
-    </section >
+        </StaggerContainer>
+      </div>
+    </section>
   );
 };
 
 export default Contact;
+
